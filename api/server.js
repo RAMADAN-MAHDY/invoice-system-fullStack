@@ -24,23 +24,21 @@ app.use(session({
     ttl: 24*60*60
   }),
   cookie: {
-    secure: true,       // HTTPS
+    secure: true,
     sameSite: 'none',
     maxAge: 24*60*60*1000
   }
 }));
 
-// إعداد الـ EJS وملفات الـ Public
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 app.use(express.static(path.join(__dirname, '../public')));
-app.set('trust proxy', 1); // مهم على Vercel
+app.set('trust proxy', 1);
 
-// ربط Routes
 app.use('/', require('../routes/webRoutes'));
 app.use('/api/items', require('../routes/itemRoutes'));
 app.use('/api/auth', require('../routes/authRoutes'));
 app.use('/api/sales', require('../routes/saleRoutes'));
 
-// تصدير الـ Handler لـ Vercel
-module.exports.handler = serverless(app);
+// 👇 export default للـ Vercel
+module.exports = serverless(app);
