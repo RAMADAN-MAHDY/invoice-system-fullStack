@@ -5,6 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const path = require('path');
 const bodyParser = require('body-parser');
 
@@ -15,16 +16,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(session({
-  secret: process.env.JWT_SECRET || 'secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 },
-}));
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI, // رابط MongoDB Atlas
+      ttl: 24*60*60 // مدة صلاحية الجلسة بالثواني
+    }),
+    cookie: {
+      secure: true,       // لازم HTTPS على Vercel
+      sameSite: 'none',   // لأنه cross-site
+      maxAge: 24*60*60*1000
+    }
+  }));
+
+  
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.set('trust proxy', 1); // مهم على Vercel
 
 // Mount frontend (web) routes
 app.use('/', require('./routes/webRoutes'));
