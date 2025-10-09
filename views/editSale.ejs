@@ -1,0 +1,21 @@
+<%- include('partials/header') %>
+<div class="container mx-auto p-4">
+  <h2 class="text-2xl font-bold mb-4 text-center">تعديل فاتورة بيع</h2>
+  <form method="POST" action="/sales/edit/<%= sale._id %>" class="max-w-md mx-auto bg-white p-4 rounded shadow">
+    <div class="mb-2">
+      <label class="block mb-1">المنتج</label>
+      <input type="text" name="itemName" value="<%= sale.itemName %>" class="border rounded px-2 py-1 w-full" readonly>
+    </div>
+    <div class="mb-2">
+      <label class="block mb-1">الكمية</label>
+      <input type="number" name="quantity" value="<%= sale.quantity %>" class="border rounded px-2 py-1 w-full" required>
+    </div>
+    <div class="mb-2">
+      <label class="block mb-1">السعر</label>
+      <input type="number" name="price" value="<%= sale.price %>" class="border rounded px-2 py-1 w-full" required>
+    </div>
+    <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded">حفظ التعديل</button>
+    <a href="/sales" class="ml-2 text-gray-600">إلغاء</a>
+  </form>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <span class="font-bold text-xl">لوحة فواتير قطع الغيار</span>
+    <form method="POST" action="/logout">
+      <button class="bg-red-500 text-white px-4 py-2 rounded">تسجيل الخروج</button>
+    </form>
+       <form method="GET" action="/sales">
+      <button class="bg-green-500 text-white px-4 py-2 rounded"> الخارج</button>
+    </form>
+    <form method="GET" action="/excel-files">
+      <button class="bg-blue-500 text-white px-4 py-2 rounded">ملفات الإكسل</button>
+    </form>
+  </nav>
+  <main class="max-w-3xl mx-auto mt-8 p-6 bg-white rounded shadow">
+    <div class="mb-6">
+      <input type="text" id="searchBar" placeholder="بحث عن قطعة أو فاتورة..." class="w-full px-3 py-2 border rounded text-right" autofocus>
+      <div id="searchLoading" style="display:none;" class="text-center"><span class="animate-spin">🔄</span> جاري التحميل...</div>
+    </div>
+    <button type="button" id="showAddFormBtn" class="bg-green-600 text-white px-4 py-2 rounded mb-4">إضافة جديد</button>
+    <form id="invoiceForm" class="space-y-4" style="display:none;">
+      <div>
+        <label class="block font-semibold">رقم الموديل</label>
+        <input type="text" id="modelNumber" name="modelNumber" class="w-full px-3 py-2 border rounded" required>
+      </div>
+      <div>
+        <label class="block font-semibold">اسم القطعة</label>
+        <input type="text" id="itemName" name="itemName" class="w-full px-3 py-2 border rounded" required>
+      </div>
+      <div>
+        <label class="block font-semibold">الكمية</label>
+        <input type="number" id="quantity" name="quantity" class="w-full px-3 py-2 border rounded" required min="1">
+      </div>
+      <div>
+        <label class="block font-semibold">سعر الوحدة</label>
+        <input type="number" id="price" name="price" class="w-full px-3 py-2 border rounded" required min="0">
+      </div>
+      <div>
+        <label class="block font-semibold">الإجمالي</label>
+        <input type="text" id="totalPrice" class="w-full px-3 py-2 border rounded bg-gray-100" readonly>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" id="saveBtn" class="bg-green-600 text-white px-4 py-2 rounded">حفظ الفاتورة</button>
+        <button type="button" id="cancelFormBtn" class="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
+      </div>
+    </form>
+    <h3 class="text-lg font-bold mb-2">الفواتير الأخيرة</h3>
+    <div class=" overflow-x-auto">
+
+
+        <table class="w-full table-auto border">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="px-2 py-1">رقم الموديل</th>
+              <th class="px-2 py-1">اسم القطعة</th>
+              <th class="px-2 py-1">الكمية</th>
+              <th class="px-2 py-1">سعر الوحدة</th>
+              <th class="px-2 py-1">الإجمالي</th>
+              <th class="px-2 py-1">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="recentInvoices">
+            <% invoices.forEach(inv => { %>
+              <tr data-id="<%= inv._id %>">
+                <td class="border px-2 py-1"><%= inv.modelNumber %></td>
+                <td class="border px-2 py-1"><%= inv.name %></td>
+                <td class="border px-2 py-1"><%= inv.quantity %></td>
+                <td class="border px-2 py-1"><%= inv.price %></td>
+                <td class="border px-2 py-1"><%= inv.quantity * inv.price %></td>
+                <td class="border px-2 py-1 flex gap-2">
+                  <button type="button" class="editBtn bg-blue-500 text-white px-2 py-1 rounded text-xs">تعديل</button>
+                  <button type="button" class="deleteBtn bg-red-500 text-white px-2 py-1 rounded text-xs">حذف</button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+
+    </div>
+  </main>
+  <script>
+    document.getElementById('quantity').addEventListener('input', calcTotal);
+    document.getElementById('price').addEventListener('input', calcTotal);
+    function calcTotal() {
+      const qty = parseFloat(document.getElementById('quantity').value) || 0;
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      document.getElementById('totalPrice').value = qty * price;
+    }
+    document.getElementById('showAddFormBtn').onclick = function() {
+      document.getElementById('invoiceForm').style.display = '';
+      document.getElementById('invoiceForm').removeAttribute('data-edit-id');
+      document.getElementById('invoiceForm').reset();
+      calcTotal();
+    };
+    document.getElementById('cancelFormBtn').onclick = function() {
+      document.getElementById('invoiceForm').style.display = 'none';
+      document.getElementById('invoiceForm').removeAttribute('data-edit-id');
+    };
+    document.querySelectorAll('.editBtn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const row = this.closest('tr');
+        document.getElementById('modelNumber').value = row.children[0].innerText;
+        document.getElementById('itemName').value = row.children[1].innerText;
+        document.getElementById('quantity').value = row.children[2].innerText;
+        document.getElementById('price').value = row.children[3].innerText;
+        calcTotal();
+        document.getElementById('invoiceForm').setAttribute('data-edit-id', row.getAttribute('data-id'));
+        document.getElementById('invoiceForm').style.display = '';
+      });
+    });
+    document.getElementById('searchBar').addEventListener('input', function() {
+      const q = this.value.trim().toLowerCase();
+      const rows = document.querySelectorAll('#recentInvoices tr');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+      });
+    });
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const row = this.closest('tr');
+        const id = row.getAttribute('data-id');
+        if (confirm('هل أنت متأكد أنك تريد حذف هذه الفاتورة؟')) {
+          fetch(`/api/items/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer <%= token %>' }
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status) {
+              row.remove();
+            } else {
+              alert(data.message || 'فشل الحذف');
+            }
+          })
+          .catch(() => {
+            alert('فشل الحذف');
+          });
+        }
+      });
+    });
+    document.getElementById('saveBtn').onclick = async function() {
+      const body = {
+        modelNumber: document.getElementById('modelNumber').value,
+        name: document.getElementById('itemName').value,
+        quantity: document.getElementById('quantity').value,
+        price: document.getElementById('price').value,
+      };
+      const form = document.getElementById('invoiceForm');
+      const editId = form.getAttribute('data-edit-id');
+      let url = '/api/items', method = 'POST';
+      if (editId) {
+        url = `/api/items/${editId}`;
+        method = 'PUT';
+      }
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer <%= token %>'
+          },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.status) {
+          alert(editId ? 'تم تعديل الفاتورة!' : 'تم حفظ الفاتورة!');
+          form.removeAttribute('data-edit-id');
+          location.reload();
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('حدث خطأ أثناء حفظ الفاتورة');
+      }
+    };
+  </script>
+</body>
+</html>
