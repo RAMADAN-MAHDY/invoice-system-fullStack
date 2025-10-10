@@ -22,7 +22,7 @@ exports.getAllItems = async (req, res) => {
 
 exports.searchItems = async (req, res) => {
   try {
-    const { q } = req.query;
+    const { search: q } = req.query;
     const items = await Item.find({
       $or: [
         { modelNumber: { $regex: q, $options: 'i' } },
