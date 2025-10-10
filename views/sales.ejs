@@ -157,7 +157,7 @@
     const q = this.value.trim();
     const resultsBox = document.getElementById("results");
     if (!q) return (resultsBox.innerHTML = "", resultsBox.classList.add("hidden"));
-    const res = await fetch(`/api/items?search=${q}`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`/api/items/search?search=${q}`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!data.status || !data.data.length) {
       resultsBox.innerHTML = "<li class='px-3 py-2 text-gray-500'>لا توجد نتائج</li>";
