@@ -3,6 +3,7 @@ const Item = require('../models/Item');
 const requireLogin = require('../middleware/requireLogin');
 const SaleInvoice = require('../models/SaleInvoice');
 const exportExcel = require('../utils/exportExcel');
+const User = require('../models/User');
 const router = express.Router();
 
 // تصدير فواتير المبيعات إلى إكسل حسب الفترة
@@ -192,5 +193,39 @@ router.post('/excel-files/delete/:id', requireLogin, async (req, res) => {
         res.status(500).send('خطأ في حذف ملف الإكسل');
     }
 });
+
+
+// عرض صفحة التسجيل
+router.get('/register', (req, res) => {
+    res.render('register', { error: null, success: null });
+  });
+
+router.post('/register', async (req, res) => {
+    const { username, password, confirmPassword } = req.body;
+  
+    if (password !== confirmPassword) {
+      return res.render('register', { error: 'كلمتا المرور غير متطابقتين', success: null });
+    }
+  
+    try {
+      const userExists = await User.findOne({ username });
+      if (userExists) {
+        return res.render('register', { error: 'اسم المستخدم موجود بالفعل', success: null });
+      }
+  
+      await User.create({ username, password }); // التشفير تلقائي عند الحفظ
+  
+      res.render('register', {
+        success: 'تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.',
+        error: null,
+      });
+    } catch (err) {
+      console.error(err);
+      res.render('register', { error: 'حدث خطأ أثناء إنشاء الحساب', success: null });
+    }
+  });
+  
+
+
 
 module.exports = router;
