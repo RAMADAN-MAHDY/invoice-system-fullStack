@@ -62,6 +62,7 @@
         <tr>
           <!-- <th class="border px-3 py-2 text-center">رقم الفاتورة</th> -->
           <th class="border px-3 py-2 text-center">التاريخ</th>
+          <th class="border px-3 py-2 text-center">رقم المنتج</th>
           <th class="border px-3 py-2 text-center">اسم المنتج</th>
           <th class="border px-3 py-2 text-center">الكمية</th>
           <th class="border px-3 py-2 text-center">السعر</th>
@@ -79,6 +80,7 @@
             <tr class="hover:bg-gray-50">
               <!-- <td class="border px-3 py-2 text-center"><%= sale._id %></td> -->
               <td class="border px-3 py-2 text-center"><%= sale.createdAt ? sale.createdAt.toISOString().slice(0,10) : '' %></td>
+              <td class="border px-3 py-2 text-center"><%= sale.modelNumber %></td>
               <td class="border px-3 py-2 text-center"><%= sale.name %></td>
               <td class="border px-3 py-2 text-center"><%= sale.quantity %></td>
               <td class="border px-3 py-2 text-center"><%= sale.price %></td>
