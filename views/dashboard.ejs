@@ -21,7 +21,7 @@
   </nav>
   <main class="max-w-3xl mx-auto mt-8 p-6 bg-white rounded shadow">
     <div class="mb-6">
-      <input type="text" id="searchBar" placeholder="بحث عن قطعة أو فاتورة..." class="w-full px-3 py-2 border rounded text-right" autofocus>
+      <input type="text" id="searchBar" placeholder="بحث عن قطعة ..." class="w-full px-3 py-2 border rounded text-right" autofocus>
       <div id="searchLoading" style="display:none;" class="text-center"><span class="animate-spin">🔄</span> جاري التحميل...</div>
     </div>
     <button type="button" id="showAddFormBtn" class="bg-green-600 text-white px-4 py-2 rounded mb-4">إضافة جديد</button>
@@ -127,7 +127,7 @@
       btn.addEventListener('click', function() {
         const row = this.closest('tr');
         const id = row.getAttribute('data-id');
-        if (confirm('هل أنت متأكد أنك تريد حذف هذه الفاتورة؟')) {
+        if (confirm('هل أنت متأكد أنك تريد حذف هذه القطعة؟')) {
           fetch(`/api/items/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer <%= token %>' }
@@ -171,14 +171,14 @@
         });
         const data = await res.json();
         if (data.status) {
-          alert(editId ? 'تم تعديل الفاتورة!' : 'تم حفظ الفاتورة!');
+          alert(editId ? 'تم تعديل !' : 'تم حفظ !');
           form.removeAttribute('data-edit-id');
           location.reload();
         } else {
           alert(data.message);
         }
       } catch (err) {
-        alert('حدث خطأ أثناء حفظ الفاتورة');
+        alert('حدث خطأ أثناء حفظ ');
       }
     };
   </script>
