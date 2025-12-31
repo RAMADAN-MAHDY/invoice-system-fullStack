@@ -1,186 +1,250 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة التحكم</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50 min-h-screen">
-  <nav class="bg-white shadow p-4 flex justify-between items-center">
-    <span class="font-bold text-xl">لوحة فواتير قطع الغيار</span>
-    <form method="POST" action="/logout">
-      <button class="bg-red-500 text-white px-4 py-2 rounded">تسجيل الخروج</button>
-    </form>
-       <form method="GET" action="/sales">
-      <button class="bg-green-500 text-white px-4 py-2 rounded"> الخارج</button>
-    </form>
-    <form method="GET" action="/excel-files">
-      <button class="bg-blue-500 text-white px-4 py-2 rounded">ملفات الإكسل</button>
-    </form>
-  </nav>
-  <main class="max-w-3xl mx-auto mt-8 p-6 bg-white rounded shadow">
-    <div class="mb-6">
-      <input type="text" id="searchBar" placeholder="بحث عن قطعة ..." class="w-full px-3 py-2 border rounded text-right" autofocus>
-      <div id="searchLoading" style="display:none;" class="text-center"><span class="animate-spin">🔄</span> جاري التحميل...</div>
+<%- include('partials/header') %>
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+
+    <div class="glass rounded-xl shadow-lg p-6 md:p-8">
+        <div class="mb-6">
+            <input type="text" id="searchBar" placeholder="بحث عن قطعة..." 
+                   class="w-full px-4 py-3 bg-gray-200 border-gray-400 rounded-lg text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" 
+                   autofocus>
+            <div id="searchLoading" style="display:none;" class="text-center text-gray-300 mt-2"><span class="animate-spin">🔄</span> جاري التحميل...</div>
+        </div>
+
+        <button type="button" id="showAddFormBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2 rounded-lg mb-6 transition-transform transform hover:scale-105">
+            إضافة قطعة جديدة
+        </button>
+
+        <form id="invoiceForm" class="space-y-5 p-6 bg-gray-800/30 rounded-lg border border-gray-700" style="display:none;">
+            <div>
+                <label class="block font-semibold text-gray-200 mb-1">رقم الموديل</label>
+                <input type="text" id="modelNumber" name="modelNumber" class="w-full px-4 py-2 bg-gray-200 border-gray-400 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-200 mb-1">اسم المورد</label>
+                <input type="text" id="customer" name="customer" class="w-full px-4 py-2 bg-gray-200 border-gray-400 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-200 mb-1">اسم القطعة</label>
+                <input type="text" id="itemName" name="itemName" class="w-full px-4 py-2 bg-gray-200 border-gray-400 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-gray-200 mb-1">الكمية</label>
+                    <input type="number" id="quantity" name="quantity" class="w-full px-4 py-2 bg-gray-200 border-gray-400 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500" required min="1">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-200 mb-1">سعر الوحدة</label>
+                    <input type="number" id="price" name="price" class="w-full px-4 py-2 bg-gray-200 border-gray-400 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500" required min="0">
+                </div>
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-200 mb-1">الإجمالي</label>
+                <input type="text" id="totalPrice" class="w-full px-4 py-2 border border-gray-700 rounded-lg bg-gray-800 text-gray-400 font-bold" readonly>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button type="button" id="saveBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg transition">حفظ</button>
+                <button type="button" id="cancelFormBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-2 rounded-lg transition">إلغاء</button>
+            </div>
+        </form>
+
+        <h3 class="text-2xl font-bold text-white mt-8 mb-4">المخزون</h3>
+        <div class="overflow-x-auto glass rounded-lg border border-gray-700">
+            <table class="w-full table-auto">
+                <thead>
+                    <tr class="border-b border-gray-700">
+                        <th colspan="5" class="text-right font-bold text-gray-200 p-4">الإجمالي الكلي للمخزون:</th>
+                        <th id="grandTotal" class="font-bold text-green-400 text-lg p-4">0</th>
+                        <th></th>
+                    </tr>
+                    <tr class="bg-gray-800/80">
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">رقم الموديل</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">اسم المورد</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">اسم القطعة</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">الكمية</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">سعر الوحدة</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">الإجمالي</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-100 uppercase tracking-wider">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="recentInvoices" class="divide-y divide-gray-700">
+                    <% invoices.forEach(inv=> { %>
+                    <tr data-id="<%= inv._id %>" class="hover:bg-gray-800/40 transition">
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100"><%= inv.modelNumber %></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100"><%= inv.customer %></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100"><%= inv.name %></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100"><%= inv.quantity %></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100"><%= inv.price %></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-green-400 font-semibold"><%= inv.quantity * inv.price %></td>
+                        <td class="px-4 py-3 whitespace-nowrap flex gap-2">
+                            <button type="button" class="editBtn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition">تعديل</button>
+                            <button type="button" class="deleteBtn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition">حذف</button>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <button type="button" id="showAddFormBtn" class="bg-green-600 text-white px-4 py-2 rounded mb-4">إضافة جديد</button>
-    <form id="invoiceForm" class="space-y-4" style="display:none;">
-      <div>
-        <label class="block font-semibold">رقم الموديل</label>
-        <input type="text" id="modelNumber" name="modelNumber" class="w-full px-3 py-2 border rounded" required>
-      </div>
-      <div>
-        <label class="block font-semibold">اسم القطعة</label>
-        <input type="text" id="itemName" name="itemName" class="w-full px-3 py-2 border rounded" required>
-      </div>
-      <div>
-        <label class="block font-semibold">الكمية</label>
-        <input type="number" id="quantity" name="quantity" class="w-full px-3 py-2 border rounded" required min="1">
-      </div>
-      <div>
-        <label class="block font-semibold">سعر الوحدة</label>
-        <input type="number" id="price" name="price" class="w-full px-3 py-2 border rounded" required min="0">
-      </div>
-      <div>
-        <label class="block font-semibold">الإجمالي</label>
-        <input type="text" id="totalPrice" class="w-full px-3 py-2 border rounded bg-gray-100" readonly>
-      </div>
-      <div class="flex gap-2">
-        <button type="button" id="saveBtn" class="bg-green-600 text-white px-4 py-2 rounded">حفظ </button>
-        <button type="button" id="cancelFormBtn" class="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
-      </div>
-    </form>
-    <h3 class="text-lg font-bold mb-2">المخزون</h3>
-    <div class=" overflow-x-auto">
+</div>
 
+<script>
+const quantityInput = document.getElementById('quantity');
+const priceInput = document.getElementById('price');
+const totalPriceInput = document.getElementById('totalPrice');
+const invoiceForm = document.getElementById('invoiceForm');
+const saveBtn = document.getElementById('saveBtn');
+const recentInvoices = document.getElementById('recentInvoices');
+const grandTotal = document.getElementById('grandTotal');
 
-        <table class="w-full table-auto border">
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="px-2 py-1">رقم الموديل</th>
-              <th class="px-2 py-1">اسم القطعة</th>
-              <th class="px-2 py-1">الكمية</th>
-              <th class="px-2 py-1">سعر الوحدة</th>
-              <th class="px-2 py-1">الإجمالي</th>
-              <th class="px-2 py-1">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="recentInvoices">
-            <% invoices.forEach(inv => { %>
-              <tr data-id="<%= inv._id %>">
-                <td class="border px-2 py-1"><%= inv.modelNumber %></td>
-                <td class="border px-2 py-1"><%= inv.name %></td>
-                <td class="border px-2 py-1"><%= inv.quantity %></td>
-                <td class="border px-2 py-1"><%= inv.price %></td>
-                <td class="border px-2 py-1"><%= inv.quantity * inv.price %></td>
-                <td class="border px-2 py-1 flex gap-2">
-                  <button type="button" class="editBtn bg-blue-500 text-white px-2 py-1 rounded text-xs">تعديل</button>
-                  <button type="button" class="deleteBtn bg-red-500 text-white px-2 py-1 rounded text-xs">حذف</button>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+function calcTotal() {
+    const qty = parseFloat(quantityInput.value) || 0;
+    const price = parseFloat(priceInput.value) || 0;
+    totalPriceInput.value = (qty * price).toFixed(2);
+}
 
-    </div>
-  </main>
-  <script>
-    document.getElementById('quantity').addEventListener('input', calcTotal);
-    document.getElementById('price').addEventListener('input', calcTotal);
-    function calcTotal() {
-      const qty = parseFloat(document.getElementById('quantity').value) || 0;
-      const price = parseFloat(document.getElementById('price').value) || 0;
-      document.getElementById('totalPrice').value = qty * price;
+quantityInput.addEventListener('input', calcTotal);
+priceInput.addEventListener('input', calcTotal);
+
+document.getElementById('showAddFormBtn').onclick = () => {
+    invoiceForm.style.display = 'block';
+    invoiceForm.removeAttribute('data-edit-id');
+    invoiceForm.reset();
+    calcTotal();
+};
+
+document.getElementById('cancelFormBtn').onclick = () => {
+    invoiceForm.style.display = 'none';
+    invoiceForm.removeAttribute('data-edit-id');
+};
+
+function editRow() {
+    const row = this.closest('tr');
+    const cells = row.children;
+    document.getElementById('modelNumber').value = cells[0].innerText;
+    document.getElementById('customer').value = cells[1].innerText;
+    document.getElementById('itemName').value = cells[2].innerText;
+    document.getElementById('quantity').value = cells[3].innerText;
+    document.getElementById('price').value = cells[4].innerText;
+    calcTotal();
+    invoiceForm.setAttribute('data-edit-id', row.getAttribute('data-id'));
+    invoiceForm.style.display = 'block';
+    window.scrollTo({ top: invoiceForm.offsetTop - 100, behavior: 'smooth' });
+}
+
+function deleteRow() {
+    const row = this.closest('tr');
+    const id = row.getAttribute('data-id');
+    if (!id) {
+        console.error('Delete failed: Missing data-id attribute');
+        Swal.fire('خطأ', 'حدث خطأ: لم يتم العثور على معرف العنصر.', 'error');
+        return;
     }
-    document.getElementById('showAddFormBtn').onclick = function() {
-      document.getElementById('invoiceForm').style.display = '';
-      document.getElementById('invoiceForm').removeAttribute('data-edit-id');
-      document.getElementById('invoiceForm').reset();
-      calcTotal();
-    };
-    document.getElementById('cancelFormBtn').onclick = function() {
-      document.getElementById('invoiceForm').style.display = 'none';
-      document.getElementById('invoiceForm').removeAttribute('data-edit-id');
-    };
-    document.querySelectorAll('.editBtn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const row = this.closest('tr');
-        document.getElementById('modelNumber').value = row.children[0].innerText;
-        document.getElementById('itemName').value = row.children[1].innerText;
-        document.getElementById('quantity').value = row.children[2].innerText;
-        document.getElementById('price').value = row.children[3].innerText;
-        calcTotal();
-        document.getElementById('invoiceForm').setAttribute('data-edit-id', row.getAttribute('data-id'));
-        document.getElementById('invoiceForm').style.display = '';
-      });
-    });
-    document.getElementById('searchBar').addEventListener('input', function() {
-      const q = this.value.trim().toLowerCase();
-      const rows = document.querySelectorAll('#recentInvoices tr');
-      rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(q) ? '' : 'none';
-      });
-    });
-    document.querySelectorAll('.deleteBtn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const row = this.closest('tr');
-        const id = row.getAttribute('data-id');
-        if (confirm('هل أنت متأكد أنك تريد حذف هذه القطعة؟')) {
-          fetch(`/api/items/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer <%= token %>' }
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status) {
-              row.remove();
-            } else {
-              alert(data.message || 'فشل الحذف');
-            }
-          })
-          .catch(() => {
-            alert('فشل الحذف');
-          });
+    Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: 'لن تتمكن من التراجع عن هذا!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'نعم، احذفه!',
+        cancelButtonText: 'إلغاء'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/items/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer <%= token %>' } })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status) {
+                    row.remove();
+                    updateGrandTotal();
+                    Swal.fire('تم الحذف!', 'تم حذف العنصر بنجاح.', 'success');
+                } else {
+                    Swal.fire('فشل الحذف', data.message || 'فشل الحذف', 'error');
+                }
+            }).catch(() => {
+                Swal.fire('خطأ', 'فشل الاتصال بالخادم.', 'error');
+            });
         }
-      });
     });
-    document.getElementById('saveBtn').onclick = async function() {
-      const body = {
+}
+
+function updateGrandTotal() {
+    let total = 0;
+    recentInvoices.querySelectorAll('tr').forEach(row => {
+        const totalCell = row.children[5];
+        total += parseFloat(totalCell.innerText) || 0;
+    });
+    grandTotal.innerText = total.toFixed(2);
+}
+
+function bindRowEvents(row) {
+    row.querySelector('.editBtn').addEventListener('click', editRow);
+    row.querySelector('.deleteBtn').addEventListener('click', deleteRow);
+}
+
+recentInvoices.querySelectorAll('tr').forEach(bindRowEvents);
+
+saveBtn.onclick = async () => {
+    const body = {
         modelNumber: document.getElementById('modelNumber').value,
+        customer: document.getElementById('customer').value,
         name: document.getElementById('itemName').value,
-        quantity: document.getElementById('quantity').value,
-        price: document.getElementById('price').value,
-      };
-      const form = document.getElementById('invoiceForm');
-      const editId = form.getAttribute('data-edit-id');
-      let url = '/api/items', method = 'POST';
-      if (editId) {
-        url = `/api/items/${editId}`;
-        method = 'PUT';
-      }
-      try {
+        quantity: parseFloat(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+    };
+
+    const editId = invoiceForm.getAttribute('data-edit-id');
+    let url = '/api/items', method = 'POST';
+    if (editId) { url = `/api/items/${editId}`; method = 'PUT'; }
+
+    try {
         const res = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer <%= token %>'
-          },
-          body: JSON.stringify(body)
+            method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <%= token %>' },
+            body: JSON.stringify(body)
         });
         const data = await res.json();
-        if (data.status) {
-          alert(editId ? 'تم تعديل !' : 'تم حفظ !');
-          form.removeAttribute('data-edit-id');
-          location.reload();
+        if (!res.ok) return Swal.fire('خطأ', data.message || 'حدث خطأ أثناء الحفظ.', 'error');
+
+        invoiceForm.removeAttribute('data-edit-id');
+        invoiceForm.style.display = 'none';
+
+        const item = data.item || body;
+        item._id = data.item?._id || editId;
+
+        if (editId) {
+            const row = recentInvoices.querySelector(`tr[data-id="${editId}"]`);
+            row.children[0].innerText = item.modelNumber;
+            row.children[1].innerText = item.customer;
+            row.children[2].innerText = item.name;
+            row.children[3].innerText = item.quantity;
+            row.children[4].innerText = item.price.toFixed(2);
+            row.children[5].innerText = (item.quantity * item.price).toFixed(2);
         } else {
-          alert(data.message);
+            const newRow = document.createElement('tr');
+            newRow.setAttribute('data-id', item._id);
+            newRow.className = 'hover:bg-gray-800/40 transition';
+            newRow.innerHTML = `
+                <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.modelNumber}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.customer}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.name}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.quantity}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.price.toFixed(2)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-green-400 font-semibold">${(item.quantity * item.price).toFixed(2)}</td>
+                <td class="px-4 py-3 whitespace-nowrap flex gap-2">
+                    <button type="button" class="editBtn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition">تعديل</button>
+                    <button type="button" class="deleteBtn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition">حذف</button>
+                </td>`;
+            recentInvoices.appendChild(newRow);
+            bindRowEvents(newRow);
         }
-      } catch (err) {
-        alert('حدث خطأ أثناء حفظ ');
-      }
-    };
-  </script>
-</body>
-</html>
+
+        updateGrandTotal();
+    } catch(err) {
+        alert('تعذر الاتصال بالخادم. تحقق من الشبكة أو الخادم.');
+        console.error(err);
+    }
+};
+
+updateGrandTotal();
+</script>
+
+<%- include('partials/footer') %>

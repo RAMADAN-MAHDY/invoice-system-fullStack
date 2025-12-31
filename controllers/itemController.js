@@ -37,9 +37,14 @@ exports.searchItems = async (req, res) => {
 
 exports.addItem = async (req, res) => {
   try {
-    const { modelNumber, name, quantity, price } = req.body;
-    const item = await Item.create({ modelNumber, name, quantity, price });
-    res.status(201).json({ status: true, message: 'Item added', data: item });
+    const { modelNumber, name, quantity, price, customer } = req.body;
+    // console.log(req.body);
+    if (!modelNumber || !name || quantity == null || price == null || !customer) {
+      return res.status(400).json({ status: false, message: 'Please provide all required fields', data: null });
+    }
+    const item = await Item.create({ modelNumber, name, quantity, price, customer });
+    const fullItem = await Item.findById(item._id); // Fetch the full item with _id
+    res.status(201).json({ status: true, message: 'Item added', data: fullItem });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message, data: null });
   }
@@ -78,6 +83,29 @@ exports.downloadExcel = async (req, res) => {
       'Content-Disposition': 'attachment; filename="invoices.xlsx"',
     });
     res.send(file.buffer);
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message, data: null });
+  }
+};
+// مصروفات
+const Expense = require('../models/Expense');
+
+exports.updateExpense = async (req, res) => {
+  try {
+    const { description, amount } = req.body;
+    const expense = await Expense.findByIdAndUpdate(req.params.id, { description, amount }, { new: true });
+    if (!expense) return res.status(404).json({ status: false, message: 'Expense not found', data: null });
+    res.status(200).json({ status: true, message: 'Expense updated', data: expense });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message, data: null });
+  }
+};
+
+exports.deleteExpense = async (req, res) => {
+  try {
+    const expense = await Expense.findByIdAndDelete(req.params.id);
+    if (!expense) return res.status(404).json({ status: false, message: 'Expense not found', data: null });
+    res.status(200).json({ status: true, message: 'Expense deleted', data: null });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message, data: null });
   }

@@ -6,6 +6,11 @@ const itemSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  customer: {
+    type: String,
+    required: false,
+    trim: true,
+  },
   name: {
     type: String,
     required: true,

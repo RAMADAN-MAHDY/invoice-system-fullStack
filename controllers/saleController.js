@@ -3,14 +3,25 @@ const Item = require('../models/Item');
 
 exports.addSaleInvoice = async (req, res) => {
   try {
-    const { modelNumber, name, quantity, price } = req.body;
+    const { modelNumber, name, quantity, price, sellerName, total: frontTotal } = req.body;
+
+    if (!modelNumber || !name || quantity == null || price == null) {
+      return res.status(400).json({ status: false, message: 'يرجى تقديم جميع الحقول المطلوبة', data: null });
+    }
+
     const item = await Item.findOne({ modelNumber });
+
     if (!item) return res.status(404).json({ status: false, message: 'المنتج غير موجود', data: null });
+
     if (item.quantity < quantity) return res.status(400).json({ status: false, message: 'الكمية غير متوفرة', data: null });
     item.quantity -= quantity;
+    // item.customer = item.customer ;
+
     await item.save();
-    const total = quantity * price;
-    const invoice = await SaleInvoice.create({ modelNumber, name, quantity, price, total });
+
+    const total = frontTotal || quantity * price;
+
+    const invoice = await SaleInvoice.create({ modelNumber, name, quantity, price, total, sellerName });
     res.status(201).json({ status: true, message: 'تم إضافة فاتورة البيع', data: invoice });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message, data: null });
@@ -52,12 +63,18 @@ exports.getSaleInvoices = async (req, res) => {
 
     const invoices = await SaleInvoice.find(filter).sort({ createdAt: -1 }).limit(100);
 
+    // Map invoices to include customer as sellerName for display in EJS
+    const sales = invoices.map(invoice => ({
+      ...invoice.toObject(),
+      customer: invoice.sellerName || 'N/A' // Use sellerName as customer, or 'N/A' if not present
+    }));
+
     console.log('Applied Filter:', invoices); // سجل الفلتر المستخدم
 
     res.status(200).json({
       status: true,
       message: 'فواتير البيع',
-      data: invoices
+      data: sales
     });
   } catch (error) {
     res.status(500).json({
@@ -65,5 +82,80 @@ exports.getSaleInvoices = async (req, res) => {
       message: error.message,
       data: null
     });
+  }
+};
+
+exports.updateSaleInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity, price } = req.body;
+
+    const sale = await SaleInvoice.findById(id);
+    if (!sale) return res.status(404).json({ status: false, message: 'الفاتورة غير موجودة' });
+
+    const item = await Item.findOne({ modelNumber: sale.modelNumber });
+    if (item) {
+      item.quantity += sale.quantity; // Restore old quantity
+      if (item.quantity < quantity) {
+        return res.status(400).json({ status: false, message: 'الكمية غير كافية' });
+      }
+      item.quantity -= quantity; // Deduct new quantity
+      await item.save();
+    }
+
+    sale.quantity = quantity;
+    sale.price = price;
+    sale.total = quantity * price;
+    await sale.save();
+
+    res.json({ status: true, message: 'تم تحديث الفاتورة', data: sale });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+exports.deleteSaleInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sale = await SaleInvoice.findById(id);
+
+    if (!sale) return res.status(404).json({ status: false, message: 'الفاتورة غير موجودة' });
+
+    const item = await Item.findOne({ modelNumber: sale.modelNumber });
+    if (item) {
+      item.quantity += sale.quantity; // Restore quantity
+      await item.save();
+    }
+
+    await SaleInvoice.findByIdAndDelete(id);
+    res.json({ status: true, message: 'تم حذف الفاتورة' });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+exports.bulkDeleteSaleInvoices = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ status: false, message: 'الرجاء تقديم قائمة بمعرفات الفواتير للحذف.' });
+    }
+
+    for (const id of ids) {
+      const sale = await SaleInvoice.findById(id);
+      if (sale) {
+        const item = await Item.findOne({ modelNumber: sale.modelNumber });
+        if (item) {
+          item.quantity += sale.quantity; // Restore quantity
+          await item.save();
+        }
+        await SaleInvoice.findByIdAndDelete(id);
+      }
+    }
+
+    res.json({ status: true, message: 'تم حذف الفواتير المحددة بنجاح!' });
+  } catch (error) {
+    res.status(500).json({ status: false, message: error.message });
   }
 };

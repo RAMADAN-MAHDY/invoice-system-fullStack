@@ -7,6 +7,7 @@ const saleInvoiceSchema = new mongoose.Schema({
   price: { type: Number, required: true, min: 0 },
   total: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now },
+  sellerName: { type: String, required: false },
 });
 
 module.exports = mongoose.model('SaleInvoice', saleInvoiceSchema);

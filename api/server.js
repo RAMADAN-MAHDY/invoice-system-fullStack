@@ -57,3 +57,11 @@ app.use((err, req, res, next) => {
 // ✅ التصدير بالطريقة الصحيحة لـ Vercel
 module.exports = app;
 module.exports.handler = serverless(app);
+
+// ✅ إضافة مستمع في وضع التطوير فقط
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running in development mode on http://localhost:${PORT}`);
+  });
+}

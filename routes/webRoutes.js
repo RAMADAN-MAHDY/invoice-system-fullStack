@@ -4,6 +4,9 @@ const requireLogin = require('../middleware/requireLogin');
 const SaleInvoice = require('../models/SaleInvoice');
 const exportExcel = require('../utils/exportExcel');
 const User = require('../models/User');
+const Purchase = require('../models/Purchase');
+const Expense = require('../models/Expense');
+const profitController = require('../controllers/profitController');
 const router = express.Router();
 
 // تصدير فواتير المبيعات إلى إكسل حسب الفترة
@@ -47,7 +50,8 @@ router.get('/sales/edit/:id', requireLogin, async (req, res) => {
         res.render('editSale', {
             sale: {
                 ...sale.toObject(),
-                itemName: sale.item ? sale.item.name : ''
+                itemName: sale.item ? sale.item.name : '',
+                sellerName: sale.sellerName // Pass sellerName to the view
             }
         });
     } catch {
@@ -58,12 +62,13 @@ router.get('/sales/edit/:id', requireLogin, async (req, res) => {
 // تنفيذ تعديل فاتورة بيع
 router.post('/sales/edit/:id', requireLogin, async (req, res) => {
     try {
-        const { quantity, price } = req.body;
+        const { quantity, price, sellerName } = req.body; // Include sellerName in the request body
         const sale = await SaleInvoice.findById(req.params.id);
         if (!sale) return res.status(404).send('فاتورة غير موجودة');
         sale.quantity = quantity;
         sale.price = price;
         sale.total = quantity * price;
+        sale.sellerName = sellerName; // Update sellerName
         await sale.save();
         res.redirect('/sales');
     } catch {
@@ -225,7 +230,64 @@ router.post('/register', async (req, res) => {
     }
   });
   
+// صفحة المشتريات والمبيعات وصافي الربح
+router.get('/profit', requireLogin, profitController.getProfitSummary);
 
+// صفحة المصروفات
+router.get('/expenses', requireLogin, async (req, res) => {
+    try {
+        const expenses = await Expense.find();
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        res.render('expenses', { expenses, totalExpenses });
+    } catch (error) {
+        res.status(500).send('خطأ في جلب البيانات');
+    }
+});
 
+// إضافة مصروف جديد
+router.post('/expenses/add', requireLogin, async (req, res) => {
+    try {
+        const { description, amount } = req.body;
+        if (!description || !amount) return res.status(400).send('يرجى إدخال جميع البيانات');
+        await Expense.create({ description, amount });
+        res.redirect('/expenses');
+    } catch (error) {
+        res.status(500).send('خطأ في إضافة المصروف');
+    }
+});
+
+// تعديل مصروف
+router.post('/expenses/edit/:id', requireLogin, async (req, res) => {
+    try {
+        const { description, amount } = req.body;
+        if (!description || !amount) return res.status(400).send('يرجى إدخال جميع البيانات');
+        await Expense.findByIdAndUpdate(req.params.id, { description, amount });
+        res.redirect('/expenses');
+    } catch (error) {
+        res.status(500).send('خطأ في تعديل المصروف');
+    }
+});
+
+// عرض فورم التعديل لمصروف (GET)
+router.get('/expenses/edit/:id', requireLogin, async (req, res) => {
+    try {
+        const editExpense = await Expense.findById(req.params.id);
+        const expenses = await Expense.find();
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        res.render('expenses', { expenses, totalExpenses, editExpense });
+    } catch (error) {
+        res.status(500).send('خطأ في تعديل المصروف');
+    }
+});
+
+// حذف مصروف
+router.post('/expenses/delete/:id', requireLogin, async (req, res) => {
+    try {
+        await Expense.findByIdAndDelete(req.params.id);
+        res.redirect('/expenses');
+    } catch (error) {
+        res.status(500).send('خطأ في حذف المصروف');
+    }
+});
 
 module.exports = router;

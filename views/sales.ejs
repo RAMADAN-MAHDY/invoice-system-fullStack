@@ -1,232 +1,558 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>فواتير المبيعات</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-</head>
-<body class="bg-gray-100 min-h-screen">
- <nav class="bg-white shadow p-4 flex justify-between items-center">
-    <span class="font-bold text-xl">لوحة فواتير قطع الغيار</span>
-    <form method="POST" action="/logout">
-      <button class="bg-red-500 text-white px-4 py-2 rounded">تسجيل الخروج</button>
-    </form>
-       <form method="GET" action="/dashboard">
-      <button class="bg-green-500 text-white px-4 py-2 rounded"> الرئيسيه</button>
-    </form>
-    <form method="GET" action="/excel-files">
-      <button class="bg-blue-500 text-white px-4 py-2 rounded">ملفات الإكسل</button>
-    </form>
-  </nav>
-<div class="max-w-5xl mx-auto bg-white shadow-md rounded-lg mt-10 p-6">
+<%- include('partials/header') %>
 
-  <h1 class="text-2xl font-bold text-center mb-6">📜 فواتير المبيعات</h1>
+<div class="container mx-auto p-4">
+    <div class="glass p-6 rounded-lg shadow-lg">
 
-  <% if (typeof error !== 'undefined' && error) { %>
-    <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-center">
-      <%= error %>
-    </div>
-  <% } %>
+        <h1 class="text-3xl font-bold text-center mb-6 text-white">📜 فواتير المبيعات</h1>
 
-  <!-- 🔍 فلترة حسب التاريخ -->
-  <form method="GET" action="/sales" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-    <div>
-      <label class="block font-semibold mb-1">من تاريخ:</label>
-      <input type="date" name="from" value="<%= from %>" class="w-full border px-3 py-2 rounded" />
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">إلى تاريخ:</label>
-      <input type="date" name="to" value="<%= to %>" class="w-full border px-3 py-2 rounded" />
-    </div>
-
-    <div class="flex items-end space-x-2">
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full">🔍 عرض الفواتير</button>
-      <a href="/sales/export<% if (from || to) { %>?from=<%= from %>&to=<%= to %><% } %>"
-         class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full text-center">
-        📤 تصدير Excel
-      </a>
-    </div>
-  </form>
-
-  <!-- زر فتح نافذة البيع الجديد -->
-  <button id="openModal" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mb-4">
-    🛒 إضافة بيع جديد
-  </button>
-
-  <!-- 🧾 جدول الفواتير -->
-  <div class="overflow-x-auto">
-    <table class="w-full border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
-      <thead class="bg-gray-100 text-gray-700">
-        <tr>
-          <!-- <th class="border px-3 py-2 text-center">رقم الفاتورة</th> -->
-          <th class="border px-3 py-2 text-center">التاريخ</th>
-          <th class="border px-3 py-2 text-center">رقم الموديل</th>
-          <th class="border px-3 py-2 text-center">اسم القطعه</th>
-          <th class="border px-3 py-2 text-center">العدد</th>
-          <th class="border px-3 py-2 text-center">السعر</th>
-          <th class="border px-3 py-2 text-center">اجمالي السعر</th>
-          <!-- <th class="border px-3 py-2 text-center">إجراءات</th> -->
-        </tr>
-      </thead>
-      <tbody>
-        <% if (sales.length === 0) { %>
-          <tr>
-            <td colspan="7" class="text-center text-gray-500 py-4">لا توجد فواتير في هذه الفترة</td>
-          </tr>
-        <% } else { %>
-          <% sales.forEach(sale => { %>
-            <tr class="hover:bg-gray-50">
-              <!-- <td class="border px-3 py-2 text-center"><%= sale._id %></td> -->
-              <td class="border px-3 py-2 text-center"><%= sale.createdAt ? sale.createdAt.toISOString().slice(0,10) : '' %></td>
-              <td class="border px-3 py-2 text-center"><%= sale.modelNumber %></td>
-              <td class="border px-3 py-2 text-center"><%= sale.name %></td>
-              <td class="border px-3 py-2 text-center"><%= sale.quantity %></td>
-              <td class="border px-3 py-2 text-center"><%= sale.price %></td>
-              <td class="border px-3 py-2 text-center font-semibold"><%= sale.total %></td>
-              <!-- <td class="border px-3 py-2 text-center space-x-1">
-                <a href="/sales/edit/<%= sale._id %>"
-                  class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">✏️ تعديل</a>
-                <form action="/sales/delete/<%= sale._id %>" method="POST" class="inline-block"
-                      onsubmit="return confirm('هل أنت متأكد من حذف الفاتورة؟');">
-                  <button type="submit" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">🗑️ حذف</button>
-                </form>
-              </td> -->
-            </tr>
-          <% }); %>
+        <% if (typeof error !=='undefined' && error) { %>
+            <div class="bg-red-900/50 text-red-400 p-3 rounded mb-4 text-center">
+                <%= error %>
+            </div>
         <% } %>
-      </tbody>
-    </table>
-  </div>
+
+        <!-- 🔍 فلترة حسب التاريخ -->
+        <form method="GET" action="/sales" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
+            <div>
+                <label class="block font-semibold mb-1 text-gray-300">من تاريخ:</label>
+                <input type="date" name="from" value="<%= from %>" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" />
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1 text-gray-300">إلى تاريخ:</label>
+                <input type="date" name="to" value="<%= to %>" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" />
+            </div>
+
+            <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full hover:bg-blue-700 transition">🔍 عرض الفواتير</button>
+                <a href="/sales/export<% if (from || to) { %>?from=<%= from %>&to=<%= to %><% } %>"
+                   class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full text-center transition">
+                    📤 تصدير Excel
+                </a>
+            </div>
+        </form>
+
+        <!-- زر فتح نافذة البيع الجديد -->
+        <div class="flex space-x-2 rtl:space-x-reverse mb-4">
+            <button id="openModal" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                🛒 إضافة بيع جديد
+            </button>
+            <button id="bulkDeleteBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition hidden">
+                🗑️ حذف المحدد
+            </button>
+        </div>
+
+        <!-- 🧾 جدول الفواتير -->
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm sm:text-base">
+                <thead class="bg-gray-800">
+                    <tr>
+                        <th class="p-3 text-center">التاريخ</th>
+                        <th class="p-3 text-center">رقم الموديل</th>
+                        <th class="p-3 text-center">اسم المشتري</th>
+                        <th class="p-3 text-center">اسم القطعه</th>
+                        <th class="p-3 text-center">العدد</th>
+                        <th class="p-3 text-center">السعر</th>
+                        <th class="p-3 text-center">اجمالي السعر</th>
+                        <th class="p-3 text-center">تحديد</th>
+                        <th class="p-3 text-center">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (sales.length===0) { %>
+                        <tr class="border-b border-gray-800">
+                            <td colspan="8" class="text-center text-gray-400 py-4">لا توجد فواتير في هذه الفترة</td>
+                        </tr>
+                    <% } else { %>
+                        <% sales.forEach(sale=> { %>
+                            <tr class="border-b border-gray-800 hover:bg-gray-700">
+                                <td class="p-3 text-center">
+                                    <%= sale.createdAt ? sale.createdAt.toISOString().slice(0,10) : '' %>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <%= sale.modelNumber %>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <%= sale.sellerName || "" %>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <%= sale.name %>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <%= sale.quantity %>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <%= sale.price %>
+                                </td>
+                                <td class="p-3 text-center font-semibold text-green-400">
+                                    <%= sale.total %>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <input type="checkbox" class="sale-checkbox" value="<%= sale._id %>">
+                                </td>
+                                <td class="p-3 text-center">
+                                    <button class="bg-blue-500 text-white px-2 py-1 mb-2 rounded hover:bg-blue-600" onclick="openEditModal('<%= sale._id %>')">تعديل</button>
+                                    <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" onclick="deleteSale('<%= sale._id %>')">حذف</button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <!-- نافذة البيع الجديد (Modal) -->
-<div id="saleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-  <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6 relative">
-    <button id="closeModal" class="absolute top-2 left-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
-    <h2 class="text-xl font-bold mb-4 text-center">🧾 عملية بيع جديدة</h2>
+<div id="saleModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div class="glass rounded-lg shadow-lg w-11/12 max-w-md p-6 relative">
+        <button id="closeModal" class="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl">&times;</button>
+        <h2 class="text-2xl font-bold mb-6 text-center text-white">🧾 عملية بيع جديدة</h2>
 
-    <!-- البحث عن المنتج -->
-    <input id="searchInput" type="text" placeholder="🔍 ابحث عن المنتج بالاسم أو رقم الموديل"
-           class="w-full border px-3 py-2 rounded mb-3 text-right" />
-    <ul id="results" class="mt-2 bg-white border rounded shadow hidden max-h-40 overflow-y-auto"></ul>
+        <!-- البحث عن المنتج -->
+        <input id="searchInput" type="text" placeholder="🔍 ابحث عن المنتج بالاسم أو رقم الموديل"
+               class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg mb-3 text-right focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <ul id="results" class="mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow hidden max-h-40 overflow-y-auto"></ul>
 
-    <!-- نموذج البيع -->
-    <form id="saleForm" class="space-y-4 hidden mt-4">
-      <div>
-        <label class="block font-semibold">رقم الموديل</label>
-        <input type="text" id="modelNumber" class="w-full border px-3 py-2 rounded bg-gray-100" readonly />
-      </div>
+        <!-- نموذج البيع -->
+        <form id="saleForm" class="space-y-4 hidden mt-4">
+            <div>
+                <label class="block font-semibold text-gray-300">رقم الموديل</label>
+                <input type="text" id="modelNumber" class="w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg" readonly />
+            </div>
 
-      <div>
-        <label class="block font-semibold">اسم القطعة</label>
-        <input type="text" id="name" class="w-full border px-3 py-2 rounded bg-gray-100" readonly />
-      </div>
+            <div>
+                <label class="block font-semibold text-gray-300">اسم العميل (Customer Name)</label>
+                <input type="text" id="customerName" name="customerName" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" placeholder="اختياري" />
+            </div>
 
-      <div>
-        <label class="block font-semibold">سعر الوحدة</label>
-        <input type="number" id="price" class="w-full border px-3 py-2 rounded bg-gray-100" readonly />
-      </div>
+            <div>
+                <label class="block font-semibold text-gray-300">اسم القطعة</label>
+                <input type="text" id="name" class="w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg" />
+            </div>
 
-      <div>
-        <label class="block font-semibold">الكمية المطلوبة</label>
-        <input type="number" id="quantity" min="1" class="w-full border px-3 py-2 rounded" />
-      </div>
+            <div>
+                <label class="block font-semibold text-gray-300">سعر الوحدة</label>
+                <input type="number" id="price" class="w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg" />
+            </div>
 
-      <div>
-        <label class="block font-semibold">الإجمالي</label>
-        <input type="text" id="total" class="w-full border px-3 py-2 rounded bg-gray-100" readonly />
-      </div>
+            <div>
+                <label class="block font-semibold text-gray-300">الكمية المطلوبة</label>
+                <input type="number" id="quantity" min="1" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" />
+            </div>
 
-      <button type="button" id="sellBtn" class="bg-green-600 text-white px-4 py-2 rounded w-full">
-        💰 تأكيد البيع
-      </button>
-    </form>
-  </div>
+            <div>
+                <label class="block font-semibold text-gray-300">الإجمالي (Total)</label>
+                <input type="number" id="total" name="frontTotal" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" placeholder="سيتم حسابه تلقائيًا" />
+            </div>
+
+            <button type="button" id="sellBtn" class="bg-green-600 text-white font-bold px-4 py-2 rounded-lg w-full hover:bg-green-700 transition">
+                💰 تأكيد البيع
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Sale Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div class="glass rounded-lg shadow-lg w-11/12 max-w-md p-6 relative">
+        <button onclick="closeEditModal()" class="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl">&times;</button>
+        <h2 class="text-2xl font-bold mb-6 text-center text-white">تعديل فاتورة البيع</h2>
+        <form id="editForm" class="space-y-4">
+            <input type="hidden" id="editSaleId">
+            <div>
+                <label class="block font-semibold text-gray-300">الكمية</label>
+                <input type="number" id="editQuantity" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" min="1">
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-300">السعر</label>
+                <input type="number" id="editPrice" class="w-full bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg" min="0">
+            </div>
+            <button type="button" onclick="submitEdit()" class="bg-green-600 text-white font-bold px-4 py-2 rounded-lg w-full hover:bg-green-700 transition">حفظ التعديلات</button>
+        </form>
+    </div>
 </div>
 
 <script>
-  const token = "<%= token %>";
+    const token = "<%= token %>";
+    const salesData = <%- JSON.stringify(sales || []) %>;
 
-  // فتح / غلق المودال
-  const modal = document.getElementById('saleModal');
-  document.getElementById('openModal').addEventListener('click', () => modal.classList.remove('hidden'));
-  document.getElementById('closeModal').addEventListener('click', () => modal.classList.add('hidden'));
+    // Sale Modal
+    const saleModal = document.getElementById('saleModal');
+    document.getElementById('openModal').addEventListener('click', () => saleModal.classList.remove('hidden'));
+    document.getElementById('closeModal').addEventListener('click', () => saleModal.classList.add('hidden'));
 
-  // البحث عن المنتجات
-  document.getElementById("searchInput").addEventListener("input", async function () {
-    const q = this.value.trim();
-    const resultsBox = document.getElementById("results");
-    if (!q) return (resultsBox.innerHTML = "", resultsBox.classList.add("hidden"));
-    const res = await fetch(`/api/items/search?search=${q}`, { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    if (!data.status || !data.data.length) {
-      resultsBox.innerHTML = "<li class='px-3 py-2 text-gray-500'>لا توجد نتائج</li>";
-      resultsBox.classList.remove("hidden");
-      return;
+    // Edit Modal
+    const editModal = document.getElementById('editModal');
+    function openEditModal(saleId) {
+        const sale = salesData.find(s => s._id === saleId);
+        if (sale) {
+            document.getElementById('editSaleId').value = sale._id;
+            document.getElementById('editQuantity').value = sale.quantity;
+            document.getElementById('editPrice').value = sale.price;
+            editModal.classList.remove('hidden');
+        }
     }
-    resultsBox.innerHTML = data.data
-      .map(item => `<li class="px-3 py-2 hover:bg-green-100 cursor-pointer" data-model="${item.modelNumber}" data-name="${item.name}" data-price="${item.price}">
-        ${item.modelNumber} - ${item.name}
-      </li>`).join("");
-    resultsBox.classList.remove("hidden");
-  });
-
-  // اختيار المنتج من البحث
-  document.getElementById("results").addEventListener("click", (e) => {
-    if (e.target.tagName === "LI") {
-      document.getElementById("modelNumber").value = e.target.dataset.model;
-      document.getElementById("name").value = e.target.dataset.name;
-      document.getElementById("price").value = e.target.dataset.price;
-      document.getElementById("results").classList.add("hidden");
-      document.getElementById("saleForm").classList.remove("hidden");
-    }
-  });
-
-  // حساب الإجمالي تلقائيًا
-  document.getElementById("quantity").addEventListener("input", () => {
-    const qty = parseFloat(document.getElementById("quantity").value) || 0;
-    const price = parseFloat(document.getElementById("price").value) || 0;
-    document.getElementById("total").value = qty * price;
-  });
-
-  // تنفيذ عملية البيع
-  document.getElementById("sellBtn").addEventListener("click", async () => {
-    const body = {
-      modelNumber: document.getElementById("modelNumber").value,
-      name: document.getElementById("name").value,
-      quantity: parseInt(document.getElementById("quantity").value),
-      price: parseFloat(document.getElementById("price").value),
-    };
-    if (!body.quantity || body.quantity <= 0) {
-      alert("الكمية غير صحيحة!");
-      return;
+    function closeEditModal() {
+        editModal.classList.add('hidden');
     }
 
-    try {
-      const res = await fetch("/api/sales", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (data.status) {
-        alert("✅ تم تسجيل عملية البيع بنجاح!");
-        document.getElementById("saleForm").reset();
-        document.getElementById("total").value = "";
-        document.getElementById("saleForm").classList.add("hidden");
-        modal.classList.add("hidden");
-        document.getElementById("searchInput").value = "";
-        window.location.reload(); // لتحديث الجدول تلقائيًا
-      } else {
-        alert("❌ " + data.message);
-      }
-    } catch (err) {
-      alert("حدث خطأ أثناء عملية البيع");
+    // Search Products
+    document.getElementById("searchInput").addEventListener("input", async function () {
+        const q = this.value.trim();
+        const resultsBox = document.getElementById("results");
+        if (!q) {
+            resultsBox.innerHTML = "";
+            resultsBox.classList.add("hidden");
+            return;
+        }
+        try {
+            const res = await fetch(`/api/items/search?search=${q}`, { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            if (!data.status || !data.data.length) {
+                resultsBox.innerHTML = "<li class='px-3 py-2 text-gray-400'>لا توجد نتائج</li>";
+            } else {
+                resultsBox.innerHTML = data.data.map(item =>
+                    `<li data-item='${JSON.stringify(item)}' class='px-3 py-2 cursor-pointer hover:bg-gray-700'>
+                        ${item.name} (${item.modelNumber}) - ${item.quantity} available
+                    </li>`
+                ).join("");
+            }
+            resultsBox.classList.remove("hidden");
+        } catch (err) {
+            resultsBox.innerHTML = "<li class='px-3 py-2 text-red-400'>خطأ في البحث</li>";
+            resultsBox.classList.remove("hidden");
+        }
+    });
+
+    // Select Product from Search
+    document.getElementById("results").addEventListener("click", function (e) {
+        if (e.target.tagName === "LI" && e.target.dataset.item) {
+            const item = JSON.parse(e.target.dataset.item);
+            document.getElementById("saleForm").classList.remove("hidden");
+            document.getElementById("modelNumber").value = item.modelNumber;
+            document.getElementById("customerName").value = item.sellerName;
+            document.getElementById("name").value = item.name;
+            document.getElementById("price").value = item.price;
+            document.getElementById("quantity").max = item.quantity;
+            document.getElementById("results").classList.add("hidden");
+            calculateTotal();
+        }
+    });
+
+    // Calculate Total
+    const priceInput = document.getElementById("price");
+    const quantityInput = document.getElementById("quantity");
+    const totalInput = document.getElementById("total");
+    function calculateTotal() {
+        const price = parseFloat(priceInput.value) || 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        totalInput.value = (price * quantity).toFixed(2);
     }
-  });
+    priceInput.addEventListener("input", calculateTotal);
+    quantityInput.addEventListener("input", calculateTotal);
+
+    // Add Sale
+    document.getElementById("sellBtn").addEventListener("click", async function () {
+        const saleData = {
+            modelNumber: document.getElementById("modelNumber").value,
+            sellerName: document.getElementById("customerName").value,
+            name: document.getElementById("name").value,
+            price: parseFloat(priceInput.value),
+            quantity: parseInt(quantityInput.value),
+            frontTotal: parseFloat(totalInput.value),
+        };
+
+        if (!saleData.modelNumber || !saleData.name || !saleData.price || !saleData.quantity) {
+            return Swal.fire({
+                icon: 'warning',
+                title: 'خطأ',
+                text: 'الرجاء ملء جميع الحقول المطلوبة.',
+                confirmButtonText: 'حسناً'
+            });
+        }
+
+        try {
+            const res = await fetch("/api/sales", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify(saleData),
+            });
+            
+            const result = await res.json();
+            console.log(result);
+            if (result.status) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'نجاح',
+                    text: 'تمت عملية البيع بنجاح!',
+                    confirmButtonText: 'حسناً'
+                });
+                window.location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'فشل',
+                    text: 'فشل البيع: ' + result.message,
+                    confirmButtonText: 'حسناً'
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء الاتصال بالخادم.',
+                confirmButtonText: 'حسناً'
+            });
+        }
+    });
+
+    // Edit Sale
+    async function submitEdit() {
+        const saleId = document.getElementById('editSaleId').value;
+        const quantity = document.getElementById('editQuantity').value;
+        const price = document.getElementById('editPrice').value;
+
+        try {
+            const res = await fetch(`/api/sales/${saleId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ quantity, price })
+            });
+            const result = await res.json();
+            if (result.status) {
+                Swal.fire({
+                icon: 'success',
+                title: 'نجاح',
+                text: 'تم تحديث فاتورة البيع بنجاح!',
+                confirmButtonText: 'حسناً'
+            });
+                window.location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'فشل',
+                    text: 'فشل تحديث فاتورة البيع: ' + result.message,
+                    confirmButtonText: 'حسناً'
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء الاتصال بالخادم.',
+                confirmButtonText: 'حسناً'
+            });
+        }
+    }
+
+
+
+    // Delete Sale
+    async function deleteSale(saleId) {
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: 'لن تتمكن من التراجع عن هذا!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم، احذفها!',
+            cancelButtonText: 'إلغاء'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/sales/${saleId}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const result = await res.json();
+                    if (result.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الحذف!',
+                            text: 'تم حذف الفاتورة بنجاح.',
+                            confirmButtonText: 'حسناً'
+                        });
+                        window.location.reload();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'فشل الحذف',
+                            text: 'فشل الحذف: ' + result.message,
+                            confirmButtonText: 'حسناً'
+                        });
+                    }
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'حدث خطأ أثناء الاتصال بالخادم.',
+                        confirmButtonText: 'حسناً'
+                    });
+                }
+            }
+        });
+    }
+
+    function openEditModal(saleId) {
+        const sale = salesData.find(s => s._id === saleId);
+        if (sale) {
+            document.getElementById('editSaleId').value = sale._id;
+            document.getElementById('editQuantity').value = sale.quantity;
+            document.getElementById('editPrice').value = sale.price;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    async function submitEdit() {
+        const saleId = document.getElementById('editSaleId').value;
+        const quantity = document.getElementById('editQuantity').value;
+        const price = document.getElementById('editPrice').value;
+
+        try {
+            const res = await fetch(`/api/sales/${saleId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ quantity, price })
+            });
+            const result = await res.json();
+            if (result.status) {
+                Swal.fire({
+                icon: 'success',
+                title: 'نجاح',
+                text: 'تم تحديث فاتورة البيع بنجاح!',
+                confirmButtonText: 'حسناً'
+            });
+                window.location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'فشل',
+                    text: 'فشل تحديث فاتورة البيع: ' + result.message,
+                    confirmButtonText: 'حسناً'
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء الاتصال بالخادم.',
+                confirmButtonText: 'حسناً'
+            });
+        }
+    }
+
+    async function deleteSale(saleId) {
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: 'لن تتمكن من التراجع عن هذا!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم، احذفها!',
+            cancelButtonText: 'إلغاء'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/sales/${saleId}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const result = await res.json();
+                    if (result.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الحذف!',
+                            text: 'تم حذف الفاتورة بنجاح.',
+                            confirmButtonText: 'حسناً'
+                        });
+                        window.location.reload();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'فشل الحذف',
+                            text: 'فشل الحذف: ' + result.message,
+                            confirmButtonText: 'حسناً'
+                        });
+                    }
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'حدث خطأ أثناء الاتصال بالخادم.',
+                        confirmButtonText: 'حسناً'
+                    });
+                }
+            }
+        });
+    }
+
+    // Bulk Delete Logic
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const saleCheckboxes = document.querySelectorAll('.sale-checkbox');
+
+    saleCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', toggleBulkDeleteButton);
+    });
+
+    function toggleBulkDeleteButton() {
+        const checkedCheckboxes = document.querySelectorAll('.sale-checkbox:checked');
+        if (checkedCheckboxes.length > 0) {
+            bulkDeleteBtn.classList.remove('hidden');
+        } else {
+            bulkDeleteBtn.classList.add('hidden');
+        }
+    }
+
+    bulkDeleteBtn.addEventListener('click', async () => {
+        const checkedCheckboxes = document.querySelectorAll('.sale-checkbox:checked');
+        const saleIdsToDelete = Array.from(checkedCheckboxes).map(cb => cb.value);
+
+        if (saleIdsToDelete.length === 0) {
+            alert('الرجاء تحديد فاتورة واحدة على الأقل للحذف.');
+            return;
+        }
+
+        if (!confirm(`هل أنت متأكد من حذف ${saleIdsToDelete.length} فاتورة محددة؟`)) return;
+
+        try {
+            const res = await fetch('/api/sales/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ ids: saleIdsToDelete })
+            });
+            const result = await res.json();
+            if (result.status) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم الحذف!',
+                    text: 'تم حذف الفواتير المحددة بنجاح.',
+                    confirmButtonText: 'حسناً'
+                });
+                window.location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'فشل الحذف',
+                    text: 'فشل الحذف الجماعي: ' + result.message,
+                    confirmButtonText: 'حسناً'
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء الاتصال بالخادم.',
+                confirmButtonText: 'حسناً'
+            });
+        }
+    });
 </script>
 
-</body>
-</html>
+<%- include('partials/footer') %>
