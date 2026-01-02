@@ -94,6 +94,8 @@ const invoiceForm = document.getElementById('invoiceForm');
 const saveBtn = document.getElementById('saveBtn');
 const recentInvoices = document.getElementById('recentInvoices');
 const grandTotal = document.getElementById('grandTotal');
+const searchBar = document.getElementById('searchBar');
+const searchLoading = document.getElementById('searchLoading');
 
 function calcTotal() {
     const qty = parseFloat(quantityInput.value) || 0;
@@ -239,10 +241,54 @@ saveBtn.onclick = async () => {
 
         updateGrandTotal();
     } catch(err) {
-        alert('تعذر الاتصال بالخادم. تحقق من الشبكة أو الخادم.');
+        Swal.fire('خطأ', 'تعذر الاتصال بالخادم. تحقق من الشبكة أو الخادم.', 'error');
         console.error(err);
     }
 };
+
+let searchTimeout;
+searchBar.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchLoading.style.display = 'block';
+    searchTimeout = setTimeout(async () => {
+        const query = searchBar.value;
+        try {
+            const res = await fetch(`/api/items/search?search=${query}`, {
+                headers: { 'Authorization': 'Bearer <%= token %>' }
+            });
+            const data = await res.json();
+            if (data.status) {
+                recentInvoices.innerHTML = '';
+                data.data.forEach(item => {
+                    const newRow = document.createElement('tr');
+                    newRow.setAttribute('data-id', item._id);
+                    newRow.className = 'hover:bg-gray-800/40 transition';
+                    newRow.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.modelNumber}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.customer}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.quantity}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-100">${item.price.toFixed(2)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-green-400 font-semibold">${(item.quantity * item.price).toFixed(2)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap flex gap-2">
+                            <button type="button" class="editBtn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition">تعديل</button>
+                            <button type="button" class="deleteBtn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition">حذف</button>
+                        </td>`;
+                    recentInvoices.appendChild(newRow);
+                    bindRowEvents(newRow);
+                });
+                updateGrandTotal();
+            } else {
+                Swal.fire('خطأ', data.message || 'فشل البحث', 'error');
+            }
+        } catch (error) {
+            Swal.fire('خطأ', 'فشل الاتصال بالخادم. تحقق من الشبكة أو الخادم.', 'error');
+            console.error(error);
+        } finally {
+            searchLoading.style.display = 'none';
+        }
+    }, 500);
+});
 
 updateGrandTotal();
 </script>
