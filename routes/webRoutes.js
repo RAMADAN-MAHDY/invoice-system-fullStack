@@ -112,7 +112,14 @@ router.post('/login', async (req, res) => {
         }
         res.render('login', { error: response.data.message || 'Invalid credentials' });
     } catch (err) {
-        res.render('login', { error: 'Invalid credentials' });
+        console.error('Login error:', err.message || err);
+        if (err.response && err.response.data && err.response.status === 400) {
+            return res.render('login', { error: err.response.data.message || 'بيانات غير صحيحة' });
+        }
+        if (!err.response) {
+            return res.render('login', { error: 'تعذر الاتصال بخادم المصادقة. تحقق من تشغيل الخادم.' });
+        }
+        res.render('login', { error: 'حدث خطأ غير متوقع أثناء تسجيل الدخول' });
     }
 });
 
