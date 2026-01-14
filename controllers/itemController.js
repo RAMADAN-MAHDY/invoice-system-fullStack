@@ -1,10 +1,18 @@
+const mongoose = require('mongoose');
+const Purchase = require('../models/Purchase');
+
 // حذف عنصر من قاعدة البيانات
 exports.deleteItem = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.error('Delete Item: Invalid ObjectId', { id: req.params.id });
+      return res.status(400).json({ status: false, message: 'Invalid item id', data: null });
+    }
     const item = await require('../models/Item').findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ status: false, message: 'Item not found', data: null });
     res.status(200).json({ status: true, message: 'Item deleted', data: null });
   } catch (error) {
+    console.error('Delete Item Error:', error);
     res.status(500).json({ status: false, message: error.message, data: null });
   }
 };
@@ -44,6 +52,16 @@ exports.addItem = async (req, res) => {
     }
     const item = await Item.create({ modelNumber, name, quantity, price, customer });
     const fullItem = await Item.findById(item._id); // Fetch the full item with _id
+    try {
+      await Purchase.create({
+        description: `شراء ${fullItem.name} (${fullItem.modelNumber}) من ${fullItem.customer}`,
+        amount: Number(fullItem.price) * Number(fullItem.quantity),
+        type: 'purchase',
+        itemId: fullItem._id
+      });
+    } catch (e) {
+      console.error('Add Purchase ledger failed:', e);
+    }
     res.status(201).json({ status: true, message: 'Item added', data: fullItem });
   } catch (error) {
     res.status(500).json({ status: false, message: error.message, data: null });
@@ -52,10 +70,40 @@ exports.addItem = async (req, res) => {
 
 exports.updateItem = async (req, res) => {
   try {
-    const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.error('Update Item: Invalid ObjectId', { id: req.params.id });
+      return res.status(400).json({ status: false, message: 'Invalid item id', data: null });
+    }
+    const { modelNumber, name, quantity, price, customer } = req.body;
+    if (!modelNumber || !name || quantity == null || price == null || !customer) {
+      return res.status(400).json({ status: false, message: 'Please provide all required fields', data: null });
+    }
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      { modelNumber, name, quantity, price, customer },
+      { new: true }
+    );
     if (!item) return res.status(404).json({ status: false, message: 'Item not found', data: null });
+    try {
+      const updated = await Purchase.findOneAndUpdate(
+        { itemId: req.params.id, type: 'purchase' },
+        { description: `تحديث شراء ${item.name} (${item.modelNumber}) من ${item.customer}`, amount: Number(item.price) * Number(item.quantity) },
+        { new: true }
+      );
+      if (!updated) {
+        await Purchase.create({
+          description: `شراء ${item.name} (${item.modelNumber}) من ${item.customer}`,
+          amount: Number(item.price) * Number(item.quantity),
+          type: 'purchase',
+          itemId: item._id
+        });
+      }
+    } catch (e) {
+      console.error('Update Purchase ledger failed:', e);
+    }
     res.status(200).json({ status: true, message: 'Item updated', data: item });
   } catch (error) {
+    console.error('Update Item Error:', error);
     res.status(500).json({ status: false, message: error.message, data: null });
   }
 };

@@ -220,6 +220,7 @@ saveBtn.onclick = async () => {
             row.children[3].innerText = item.quantity;
             row.children[4].innerText = item.price.toFixed(2);
             row.children[5].innerText = (item.quantity * item.price).toFixed(2);
+            Swal.fire('تم الحفظ', 'تم تعديل العنصر بنجاح.', 'success');
         } else {
             const newRow = document.createElement('tr');
             newRow.setAttribute('data-id', item._id);
@@ -237,6 +238,7 @@ saveBtn.onclick = async () => {
                 </td>`;
             recentInvoices.appendChild(newRow);
             bindRowEvents(newRow);
+            Swal.fire('تم الحفظ', 'تم إضافة العنصر إلى المخزون وإلى المشتريات.', 'success');
         }
 
         updateGrandTotal();

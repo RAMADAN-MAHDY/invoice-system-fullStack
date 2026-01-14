@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Purchase = require('../models/Purchase');
 const Expense = require('../models/Expense');
 const profitController = require('../controllers/profitController');
+const protect = require('../middleware/protectMiddleware');
 const router = express.Router();
 
 // تصدير فواتير المبيعات إلى إكسل حسب الفترة
@@ -239,6 +240,12 @@ router.post('/register', async (req, res) => {
   
 // صفحة المشتريات والمبيعات وصافي الربح
 router.get('/profit', requireLogin, profitController.getProfitSummary);
+router.post('/purchases/adjust', requireLogin, profitController.addPurchaseAdjustment);
+router.get('/api/profit', protect, profitController.getProfitSummaryJson);
+router.post('/api/purchases/adjust', protect, profitController.addPurchaseAdjustmentApi);
+router.get('/purchases', requireLogin, async (req, res) => {
+    res.render('purchases', { token: req.session.token });
+});
 
 // صفحة المصروفات
 router.get('/expenses', requireLogin, async (req, res) => {

@@ -47,6 +47,7 @@ app.use('/', require('../routes/webRoutes'));
 app.use('/api/items', require('../routes/itemRoutes'));
 app.use('/api/auth', require('../routes/authRoutes'));
 app.use('/api/sales', require('../routes/saleRoutes'));
+app.use('/api/purchases', require('../routes/purchaseRoutes'));
 
 // معالجة الأخطاء
 app.use((err, req, res, next) => {
